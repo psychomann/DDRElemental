@@ -1,0 +1,164 @@
+/*
+  14 Octtobre 2021
+  Interface Joystick pour plateau DDR en Bois fabriqué à la maison
+  Version moderne en USB directement sans détruire une manette premier prix et souder à lárrache des fils dessus
+  avec une led de control
+  Sur carte controleur Teensy 2.0
+  Bonus : on utilise le Konami-code ~_^
+*/
+
+// Boutons du Joystick dans l'interface de l'OS
+// pour le pad de Gauche (1 à 32)
+
+#define JB_G_START      1
+#define JB_G_HAUT       2
+#define JB_G_BAS        3
+#define JB_G_GAUCHE     4
+#define JB_G_DROITE     5
+#define JB_G_CENTRE     6
+#define JB_G_HAUTGAUCHE 7
+#define JB_G_HAUTDROITE 8
+
+// Pour le pad de droite (1 à 32)
+
+#define JB_D_START      9
+#define JB_D_HAUT       10
+#define JB_D_BAS        11
+#define JB_D_GAUCHE     12
+#define JB_D_DROITE     13
+#define JB_D_CENTRE     14
+#define JB_D_HAUTGAUCHE 15
+#define JB_D_HAUTDROITE 16
+
+// Pins pour le Pad de Gauche
+#define G_START       9
+#define G_HAUT        8
+#define G_BAS         7
+#define G_GAUCHE      6
+#define G_DROITE      5
+#define G_CENTRE      4 // pour PIU
+#define G_HAUTGAUCHE  3 // Solo mode
+#define G_HAUTDROITE  2 // Solo mode
+
+// Pins pour le Pad de Droite
+#define D_START       12     
+#define D_HAUT        13
+#define D_BAS         14
+#define D_GAUCHE      15
+#define D_DROITE      16
+#define D_CENTRE      17  // pour PIU
+#define D_HAUTGAUCHE  18  // Solo mode
+#define D_HAUTDROITE  19  // Solo mode
+
+// LED de controle
+#define LED_CHECK     11 // Avec Teeensy 2.0
+
+#define BLINK_STAND_BY_UP 250
+#define BLINK_STAND_BY_DOWN 250
+
+void setup() {
+// Intialisation Led de controle
+  pinMode(LED_CHECK,    OUTPUT);
+
+// Intialisation du Pad Gauche
+  pinMode(G_START,      INPUT_PULLUP);
+  pinMode(G_HAUT,       INPUT_PULLUP);
+  pinMode(G_BAS,        INPUT_PULLUP);
+  pinMode(G_GAUCHE,     INPUT_PULLUP);
+  pinMode(G_DROITE,     INPUT_PULLUP);
+  pinMode(G_CENTRE,     INPUT_PULLUP);
+  pinMode(G_HAUTGAUCHE, INPUT_PULLUP);
+  pinMode(G_HAUTDROITE, INPUT_PULLUP);
+
+// Intialisation du Pad Droite
+  pinMode(D_START,      INPUT_PULLUP);
+  pinMode(D_HAUT,       INPUT_PULLUP);
+  pinMode(D_BAS,        INPUT_PULLUP);
+  pinMode(D_GAUCHE,     INPUT_PULLUP);
+  pinMode(D_DROITE,     INPUT_PULLUP);
+  pinMode(D_CENTRE,     INPUT_PULLUP);
+  pinMode(D_HAUTGAUCHE, INPUT_PULLUP);
+  pinMode(D_HAUTDROITE, INPUT_PULLUP);
+}
+
+// Lecture de l'état des pin et mise à jour des boutons du pad gauche
+int pad_gauche(void) {
+
+  int any_press = 0;
+  
+  Joystick.button(JB_G_START,       !digitalRead(G_START));
+  Joystick.button(JB_G_HAUT,        !digitalRead(G_HAUT));
+  Joystick.button(JB_G_BAS,         !digitalRead(G_BAS));
+  Joystick.button(JB_G_GAUCHE,      !digitalRead(G_GAUCHE));
+  Joystick.button(JB_G_DROITE,      !digitalRead(G_DROITE));
+  Joystick.button(JB_G_CENTRE,      !digitalRead(G_CENTRE));
+  Joystick.button(JB_G_HAUTGAUCHE,  !digitalRead(G_HAUTGAUCHE));
+  Joystick.button(JB_G_HAUTGAUCHE,  !digitalRead(G_HAUTGAUCHE));
+
+  any_press =  digitalRead(G_START)
+              * digitalRead(G_HAUT)
+              * digitalRead(G_BAS)
+              * digitalRead(G_GAUCHE)
+              * digitalRead(G_DROITE)
+              * digitalRead(G_CENTRE)
+              * digitalRead(G_HAUTGAUCHE)
+              * digitalRead(G_HAUTDROITE);
+              
+  return (!any_press);
+  }
+
+// Lecture de l'état des pin et mise à jour des boutons du pad droite
+int pad_droite(void) {
+
+  int any_press = 0;
+  
+  Joystick.button(JB_D_START,       !digitalRead(D_START));
+  Joystick.button(JB_D_HAUT,        !digitalRead(D_HAUT));
+  Joystick.button(JB_D_BAS,         !digitalRead(D_BAS));
+  Joystick.button(JB_D_GAUCHE,      !digitalRead(D_GAUCHE));
+  Joystick.button(JB_D_DROITE,      !digitalRead(D_DROITE));
+  Joystick.button(JB_D_CENTRE,      !digitalRead(D_CENTRE));
+  Joystick.button(JB_D_HAUTGAUCHE,  !digitalRead(D_HAUTGAUCHE));
+  Joystick.button(JB_D_HAUTDROITE,  !digitalRead(D_HAUTDROITE));
+
+  any_press =  digitalRead(D_START)
+              * digitalRead(D_HAUT)
+              * digitalRead(D_BAS)
+              * digitalRead(D_GAUCHE)
+              * digitalRead(D_DROITE)
+              * digitalRead(D_CENTRE)
+              * digitalRead(D_HAUTGAUCHE)
+              * digitalRead(D_HAUTDROITE);
+  
+  return (!any_press);
+  }
+
+  
+void loop() {
+  static int stand_by = 1; // Etat initial : en stand-by
+  int led_feedback = 0;
+
+  led_feedback = pad_gauche() + pad_droite(); // Lecture de l'état des pins et mise à jour des boutons des pads, valeur positive si au moins un bouton est appuyé
+
+// Mode Stand-by en attendant une première impulsion
+  if (stand_by) {
+    digitalWrite(LED_CHECK, HIGH);  // LED on
+    delay(BLINK_STAND_BY_UP);
+    digitalWrite(LED_CHECK, LOW); // LED off
+    delay(BLINK_STAND_BY_DOWN);
+    if (led_feedback) { // Mode Stand-by interrompu
+      stand_by = 0;
+    }
+  }
+  else // Mode stand-by terminé, la led s'allume quand on appuie sur une des 8 touches
+  { 
+    if (led_feedback) {
+      digitalWrite(LED_CHECK, HIGH);  // LED on
+      }
+      else {
+        digitalWrite(LED_CHECK, LOW); // LED off
+      }
+      }
+// tempo de détente
+delay(10);
+}
