@@ -1,0 +1,156 @@
+/*
+  15 Octtobre 2021
+  Interface Joystick pour plateau DDR en Bois fabriqué à la maison lumineux
+  Version moderne en USB directement sans détruire une manette premier prix et souder à l'arrache des fils dessus
+  avec peut-être une led de control
+  Sur carte controleur Teensy 2.0
+  Bonus : on utilise le Konami-code ~_^
+ */
+// Joystick
+// pour le pad (1 à 32)
+
+#define JB_START      1
+#define JB_HAUT       2
+#define JB_BAS        3
+#define JB_GAUCHE     4
+#define JB_DROITE     5
+#define JB_CENTRE     6
+#define JB_HAUTGAUCHE 7
+#define JB_HAUTDROITE 8
+
+// Pads
+#define P_START       9
+#define P_HAUT        8
+#define P_BAS         7
+#define P_GAUCHE      6
+#define P_DROITE      5
+#define P_CENTRE      4 // pour PIU
+#define P_HAUTGAUCHE  3 // Solo mode
+#define P_HAUTDROITE  2 // Solo mode
+
+// Feedback Lumineux
+#define L_START       12     
+#define L_HAUT        13
+#define L_BAS         14
+#define L_GAUCHE      15
+#define L_DROITE      16
+#define L_CENTRE      17  // pour PIU
+#define L_HAUTGAUCHE  18  // Solo mode
+#define L_HAUTDROITE  19  // Solo mode
+
+// LED de controle
+#define LED_CHECK     11 // Avec Teeensy 2.0
+
+#define BLINK_STAND_BY_UP 250
+#define BLINK_STAND_BY_DOWN 250
+
+void setup() {
+// Intialisation Led de controle
+  pinMode(LED_CHECK,    OUTPUT);
+
+// Intialisation du Pad Gauche
+  pinMode(P_START,      INPUT_PULLUP);
+  pinMode(P_HAUT,       INPUT_PULLUP);
+  pinMode(P_BAS,        INPUT_PULLUP);
+  pinMode(P_GAUCHE,     INPUT_PULLUP);
+  pinMode(P_DROITE,     INPUT_PULLUP);
+  pinMode(P_CENTRE,     INPUT_PULLUP);
+  pinMode(P_HAUTGAUCHE, INPUT_PULLUP);
+  pinMode(P_HAUTDROITE, INPUT_PULLUP);
+
+// Intialisation du Pad Droite
+  pinMode(L_START,      OUTPUT);
+  pinMode(L_HAUT,       OUTPUT);
+  pinMode(L_BAS,        OUTPUT);
+  pinMode(L_GAUCHE,     OUTPUT);
+  pinMode(L_DROITE,     OUTPUT);
+  pinMode(L_CENTRE,     OUTPUT);
+  pinMode(L_HAUTGAUCHE, OUTPUT);
+  pinMode(L_HAUTDROITE, OUTPUT);
+
+  Serial.begin(9600); // Retour console
+}
+
+void light_on_press(int pin, int etat) {
+  if (etat) {
+    digitalWrite(pin, HIGH);
+    }
+  else {
+    digitalWrite(pin, LOW);
+  }
+}
+
+// Lecture de l'état des pin et mise à jour des boutons du pad
+int press_pad(void) {
+
+  int any_press = 0;
+  int debut = 0;
+  int haut = 0;
+  int bas = 0;
+  int gauche = 0;
+  int droite = 0;
+  int centre = 0;
+  int diaghg = 0;
+  int diaghd = 0;
+  
+  debut   = digitalRead(P_START);
+  haut    = digitalRead(P_HAUT);
+  bas     = digitalRead(P_BAS);
+  gauche  = digitalRead(P_GAUCHE);
+  droite  = digitalRead(P_DROITE);
+  centre  = digitalRead(P_CENTRE);
+  diaghg  = digitalRead(P_HAUTGAUCHE);
+  diaghd  = digitalRead(P_HAUTDROITE);
+  
+  Joystick.button(JB_START,      !debut);
+  Joystick.button(JB_HAUT,       !haut);
+  Joystick.button(JB_BAS,        !bas);
+  Joystick.button(JB_GAUCHE,     !gauche);
+  Joystick.button(JB_DROITE,     !droite);
+  Joystick.button(JB_CENTRE,     !centre);
+  Joystick.button(JB_HAUTGAUCHE, !diaghg);
+  Joystick.button(JB_HAUTDROITE, !diaghd);
+
+  light_on_press(L_START,       !debut);
+  light_on_press(L_HAUT,        !haut);
+  light_on_press(L_BAS,         !bas);
+  light_on_press(L_GAUCHE,      !gauche);
+  light_on_press(L_DROITE,      !droite);
+  light_on_press(L_CENTRE,      !centre);
+  light_on_press(L_HAUTGAUCHE,  !diaghg);
+  light_on_press(L_HAUTDROITE,  !diaghd); 
+  
+  any_press = debut * haut * bas * gauche * droite * centre * diaghg * diaghd;
+                
+  return (!any_press);
+  }
+
+void loop() {
+  
+  static int stand_by = 1; // Etat initial : 1 = en Stand-By, 0 = Ready
+  int led_feedback = 0;
+
+  led_feedback = press_pad(); // Lecture de l'état des pin et mise à jour des boutons du pad gauche, la led du teensy s'allume si au moins un bouton est appuyé
+
+// Mode Stand-by en attendant une première impulsion
+  if (stand_by) {
+    digitalWrite(LED_CHECK, HIGH);  // LED on
+    delay(BLINK_STAND_BY_UP);
+    digitalWrite(LED_CHECK, LOW); // LED off
+    delay(BLINK_STAND_BY_DOWN);
+    if (led_feedback) { // Mode Stand-by interrompu
+      stand_by = 0;
+    }
+  }
+  else // Mode stand-by terminé, la led s'allume quand on appuie sur une des 8 touches
+  { 
+    if (led_feedback) {
+      digitalWrite(LED_CHECK, HIGH);  // LED on
+      }
+      else {
+        digitalWrite(LED_CHECK, LOW); // LED off
+      }
+      }
+// tempo de détente                             
+delay(10);
+}
